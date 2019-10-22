@@ -1,21 +1,21 @@
 package View;
 
 import Controller.MouseEventHandler;
+import Controller.Simulation.Observable;
+import Controller.Simulation.Observer;
 import Model.RoadTraffic;
 import javafx.application.Platform;
-import javafx.geometry.Insets;
-import javafx.scene.control.ButtonBar.ButtonData;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.input.MouseEvent;
-import javafx.scene.layout.GridPane;
 import javafx.scene.layout.Region;
 import javafx.scene.paint.Color;
 import javafx.util.Pair;
+import java.util.ArrayList;
+import java.util.List;
 
-import java.util.*;
 
 public class RoadTrafficPanel extends Region implements Observer {
     final static int CELLSIZE = 34;
@@ -29,7 +29,6 @@ public class RoadTrafficPanel extends Region implements Observer {
     private Canvas canvas;
     private GraphicsContext gc;
     private SimulatorView view;
-    private Dialog<Pair<String, String>> dialog;
 
     // Konstruktor
     public RoadTrafficPanel(SimulatorView view, RoadTraffic roadTraffic) {
@@ -55,7 +54,7 @@ public class RoadTrafficPanel extends Region implements Observer {
     }
 
     // Bilder werden geladen
-    void loadImages() {
+    private void loadImages() {
         this.tire = new Image(getClass().getResource("Resources/reifen24.png").toString());
         this.carImages = new ArrayList<>();
         for (int i = 0; i <= 3; i++) {
@@ -65,7 +64,7 @@ public class RoadTrafficPanel extends Region implements Observer {
     }
 
     // Canvas wird erstellt und mit der paint() Methode gezeichnet
-    void init() {
+    private void init() {
         this.canvas = new Canvas();
         this.gc = this.canvas.getGraphicsContext2D();
         this.paint();
@@ -73,7 +72,7 @@ public class RoadTrafficPanel extends Region implements Observer {
     }
 
     // Diese Methode zeichnet das Spielfeld
-    public void paint() {
+    private void paint() {
         canvas.setHeight(getRoadTrafficHeigh());
         canvas.setWidth(getRoadTrafficWidth());
 
@@ -97,7 +96,7 @@ public class RoadTrafficPanel extends Region implements Observer {
         paintLights();
     }
 
-    public void paintLights() {
+    private void paintLights() {
         for (int z = 0; z < roadTraffic.getActualRows(); z++) {
             for (int s = 0; s < roadTraffic.getActualColumns(); s++) {
                 if (roadTraffic.isLightOnPos(z, s)) {
@@ -108,7 +107,7 @@ public class RoadTrafficPanel extends Region implements Observer {
 
     }
 
-    public void paintCar() {
+    private void paintCar() {
         for (int z = 0; z < roadTraffic.getActualRows(); z++) {
             for (int s = 0; s < roadTraffic.getActualColumns(); s++) {
                 if (roadTraffic.getCarRow() == z && roadTraffic.getCarColumns() == s) {
@@ -131,19 +130,24 @@ public class RoadTrafficPanel extends Region implements Observer {
         }
     }
 
-    public void paintTires() {
+    private void paintTires() {
         for (int z = 0; z < roadTraffic.getActualRows(); z++) {
             for (int s = 0; s < roadTraffic.getActualColumns(); s++) {
                 if (roadTraffic.getTiresAtPos(z, s) > 0) {
                     gc.drawImage(tire, 2 + (s * 34), 2 + (z * 34));
                     // Die Idee mit dem Text stammt von Patrick Tonne
+                    if (roadTraffic.getTiresAtPos(z,s) < 10) {
                     gc.strokeText(String.valueOf(roadTraffic.getTiresAtPos(z, s)), 2 + (s * 34) + 24, 2 + (z * 34) + 30);
+                    }
+                    else {
+                        gc.strokeText(String.valueOf(roadTraffic.getTiresAtPos(z, s)), 2 + (s * 32) + 24, 2 + (z * 34) + 30); }
+                    }
                 }
             }
         }
-    }
 
-    public void update(Observable o, Object arg) {
+
+    public void update(Observable o) {
         if (Platform.isFxApplicationThread()) {
             paint();
             view.center(view.getSc().getViewportBounds(),this.canvas);

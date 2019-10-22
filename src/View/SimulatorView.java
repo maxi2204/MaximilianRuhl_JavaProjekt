@@ -7,8 +7,6 @@ import Controller.Program.ProgramController;
 import Controller.Simulation.SimulationManager;
 import Controller.Simulation.SimulationState;
 import Model.RoadTraffic;
-import javafx.beans.value.ChangeListener;
-import javafx.beans.value.ObservableValue;
 import javafx.geometry.Bounds;
 import javafx.geometry.Insets;
 import javafx.scene.Scene;
@@ -19,10 +17,12 @@ import javafx.scene.image.ImageView;
 import javafx.scene.input.KeyCombination;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.GridPane;
+import javafx.scene.media.AudioClip;
 import javafx.stage.Stage;
 import javafx.util.Pair;
 
 import java.io.IOException;
+import java.net.URL;
 import java.util.Optional;
 
 public class SimulatorView {
@@ -31,7 +31,9 @@ public class SimulatorView {
     // Datum: 25.08.2019
     // Model
     private RoadTraffic roadTraffic;
+    // PlacingState
     private PlacingState placingState;
+    // SimulationManager
     private SimulationManager simulationManager;
     // Stage
     private Stage stage;
@@ -78,13 +80,17 @@ public class SimulatorView {
     private ToggleButton btnStop;
 
     private Dialog<Pair<Integer, Integer>> dialog;
+//TODO datei irgendwo anders hin machen
+    final URL resource = getClass().getResource("death.wav");
+    final AudioClip clip = new AudioClip(resource.toString());
 
-    public SimulatorView(RoadTraffic roadTraffic, Stage stage, Program program) {
+    public SimulatorView(RoadTraffic roadTraffic, Stage stage, Program program, SimulationManager simulationManager) {
         this.roadTraffic = roadTraffic;
         this.stage = stage;
         this.program = program;
         this.placingState = new PlacingState(this);
         sPanel = new RoadTrafficPanel(this, this.roadTraffic);
+        this.simulationManager = simulationManager;
         //Haupt Layout mit MenüBar
         mainPane = new BorderPane();
         //MenuBar menu = new MenuBar();
@@ -114,12 +120,12 @@ public class SimulatorView {
 
         mainPane.setCenter(centerPane);
         mainPane.setBottom(meldungen);
-        Scene scene = new Scene(mainPane, 1400,900);
+        Scene scene = new Scene(mainPane, 1400, 900);
 
         stage.setTitle(this.program.getName());
         stage.setScene(scene);
 
-        stage.setOnCloseRequest(e-> ProgramController.removeProgram(this.program, this.textArea.getText()));
+        stage.setOnCloseRequest(e -> ProgramController.removeProgram(this.program, this.textArea.getText()));
     }
 
 
@@ -142,7 +148,7 @@ public class SimulatorView {
         // Kompilieren des bestehenden Programms
         compileItem = new MenuItem("_Kompilieren");
         compileItem.setAccelerator(KeyCombination.keyCombination("SHORTCUT+K"));
-        compileItem.setOnAction(event -> CompileController.compileReload(this.roadTraffic,this.program,this.textArea.getText()));
+        compileItem.setOnAction(event -> CompileController.compileReload(this.roadTraffic, this.program, this.textArea.getText()));
         // Drucken
         printItem = new MenuItem("_Drucken");
         printItem.setAccelerator(KeyCombination.keyCombination("SHORTCUT+P"));
@@ -152,8 +158,9 @@ public class SimulatorView {
         closeItem = new MenuItem("_Beenden");
         closeItem.setAccelerator(KeyCombination.keyCombination("SHORTCUT+Q"));
         closeItem.setOnAction(e -> {
-            ProgramController.removeProgram(this.program,this.textArea.getText());
-         this.stage.close();});
+            ProgramController.removeProgram(this.program, this.textArea.getText());
+            this.stage.close();
+        });
         editorMenu.getItems().addAll(newItem, openItem, new SeparatorMenuItem(), compileItem, printItem, new SeparatorMenuItem(), closeItem);
         // Welt Menü
         worldMenu = new Menu("_Welt");
@@ -201,9 +208,20 @@ public class SimulatorView {
         startItem.setAccelerator(KeyCombination.keyCombination("SHORTCUT+F11"));
         Image imgStart = new Image(getClass().getResource("Resources/Play16.gif").toString());
         startItem.setGraphic(new ImageView(imgStart));
+        startItem.setOnAction(event -> {
+            int status = simulationManager.getStatus();
+            if (status == SimulationState.RUNNING) {
+                simulationManager.toggle();
+            } else {
+                simulationManager.start();
+            }
+        });
         breakItem = new MenuItem("_Pause");
         Image imgBreak = new Image(getClass().getResource("Resources/Pause16.gif").toString());
         breakItem.setGraphic(new ImageView(imgBreak));
+        breakItem.setOnAction(event -> {
+            simulationManager.toggle();
+        });
         freezeItem = new MenuItem("_Stopp");
         freezeItem.setAccelerator(KeyCombination.keyCombination("SHORTCUT+F12"));
         Image imgFreeze = new Image(getClass().getResource("Resources/Stop16.gif").toString());
@@ -243,9 +261,9 @@ public class SimulatorView {
         Image imgComp = new Image(getClass().getResource("Resources/Compile24.gif").toString());
         btnComp.setGraphic(new ImageView(imgComp));
         btnComp.setTooltip(new Tooltip("Kompilieren"));
-        btnComp.setOnAction(event -> CompileController.compileReload(this.roadTraffic,this.program,this.textArea.getText()));
+        btnComp.setOnAction(event -> CompileController.compileReload(this.roadTraffic, this.program, this.textArea.getText()));
         btnComp.setToggleGroup(toggleGroup);
-        //TODO Dialog box event
+
         btnTerrain = new ToggleButton();
         Image imgTer = new Image(getClass().getResource("Resources/Terrain24.gif").toString());
         btnTerrain.setGraphic(new ImageView(imgTer));
@@ -285,6 +303,12 @@ public class SimulatorView {
         Image imgReifenImAuto = new Image(getClass().getResource("Resources/reifenimauto.png").toString());
         btnTiresInsideCar.setGraphic(new ImageView(imgReifenImAuto));
         btnTiresInsideCar.setTooltip(new Tooltip("Anzahl der Reifen im Car"));
+        btnTiresInsideCar.setOnAction(event -> {
+            Alert info = new Alert(Alert.AlertType.INFORMATION);
+            info.setHeaderText("Anzahl der Reifen im Auto:");
+            info.setContentText(""+roadTraffic.getCarTires());
+            info.showAndWait();
+        });
         btnTiresInsideCar.setToggleGroup(toggleGroup);
 
         btnCarLeftAround = new ToggleButton();
@@ -298,7 +322,13 @@ public class SimulatorView {
         Image imgCarAgo = new Image(getClass().getResource("Resources/autogas.png").toString());
         btnCarAgo.setGraphic(new ImageView(imgCarAgo));
         btnCarAgo.setTooltip(new Tooltip("Car vorwärts bewegen"));
-        btnCarAgo.setOnAction(event -> roadTraffic.ago());
+        btnCarAgo.setOnAction(event -> {
+            try {
+            roadTraffic.ago(); }
+            catch (Exception e) {
+                clip.play(1);
+            }
+        });
         btnCarAgo.setToggleGroup(toggleGroup);
 
         btnTakeTires = new ToggleButton();
@@ -319,12 +349,25 @@ public class SimulatorView {
         Image imgPlay = new Image(getClass().getResource("Resources/Play24.png").toString());
         btnPlay.setGraphic(new ImageView(imgPlay));
         btnPlay.setTooltip(new Tooltip("Starten"));
+        btnPlay.setOnAction(event -> {
+            btnPlay.setDisable(true);
+            int status = simulationManager.getStatus();
+            if (status == SimulationState.RUNNING) {
+                simulationManager.toggle();
+            } else {
+                simulationManager.start(()-> btnPlay.setDisable(false));
+            }
+        });
         btnPlay.setToggleGroup(toggleGroup);
 
         btnBreak = new ToggleButton();
         Image imgBreak = new Image(getClass().getResource("Resources/Pause24.png").toString());
         btnBreak.setGraphic(new ImageView(imgBreak));
         btnBreak.setTooltip(new Tooltip("Pause"));
+        btnBreak.setOnAction(event -> {
+            btnPlay.setDisable(true);
+            simulationManager.toggle();
+        });
         btnBreak.setToggleGroup(toggleGroup);
 
         btnStop = new ToggleButton();
@@ -332,14 +375,13 @@ public class SimulatorView {
         btnStop.setGraphic(new ImageView(imgStop));
         btnStop.setTooltip(new Tooltip("Stopp"));
         btnStop.setToggleGroup(toggleGroup);
+        btnStop.setOnAction(e -> {
+            simulationManager.stop();
+        });
 
         Slider slider = createSlider();
-        slider.valueProperty().addListener(new ChangeListener<Number>() {
-            @Override
-            public void changed(ObservableValue<? extends Number> observable, Number oldValue, Number newValue) {
-                simulationManager.setSpeed(newValue.intValue());
-            }
-        });
+        slider.valueProperty().addListener((observable, oldValue, newValue)
+                -> simulationManager.setSpeed(newValue.intValue()));
         // Toolbar initialisieren und mit den Elementen befüllen
         this.hauptToolBar = new ToolBar(btnNew, btnOpen, new Separator(), btnSave, btnComp, new Separator(), btnTerrain, btnNewCar, btnTire, btnLight, btnDelete, new Separator(), btnTiresInsideCar, btnCarLeftAround, btnCarAgo, btnTakeTires, btnDeliverTires, new Separator(), btnPlay, btnBreak, btnStop, new Separator(), slider);
         // layout.getChildren().addAll(hauptToolBar);
@@ -372,14 +414,15 @@ public class SimulatorView {
             Program program = new Program(str);
             CompileController.firstCompile(roadTraffic, program);
             ProgramController.add(program);
-            new SimulatorView(roadTraffic,stage,program);
+            SimulationManager simulationManager = new SimulationManager(roadTraffic);
+            new SimulatorView(roadTraffic, stage, program, simulationManager);
             stage.show();
         } catch (IOException exc) {
             System.out.println("Fehler beim erstellen der Stage");
         }
     }
 
-    private Slider createSlider () {
+    private Slider createSlider() {
         Slider slider = new Slider();
         slider.setMin(0);
         slider.setMax(100);
@@ -628,14 +671,13 @@ public class SimulatorView {
         this.btnNewCar = tb;
     }
 
-    // TODO Dialog Fenster fixen so dass nur zahlen eingegeben werden können und der ok button nur aktiverbar ist dann
-    // Methode stammt von https://stackoverflow.com/questions/31556373/javafx-dialog-with-2-input-fields
+    // Methode ist angelehnt an https://stackoverflow.com/questions/31556373/javafx-dialog-with-2-input-fields
 
     public void paintDialog() {
         this.dialog = new Dialog<>();
         dialog.setTitle("Grösse des Spielfeldes ändern");
-        ButtonType loginButtonType = new ButtonType("OK", ButtonBar.ButtonData.OK_DONE);
-        dialog.getDialogPane().getButtonTypes().addAll(loginButtonType, ButtonType.CANCEL);
+        ButtonType loginButton = new ButtonType("OK", ButtonBar.ButtonData.OK_DONE);
+        dialog.getDialogPane().getButtonTypes().addAll(loginButton, ButtonType.CANCEL);
 
         GridPane gridPane = new GridPane();
         gridPane.setHgap(20);
@@ -646,31 +688,62 @@ public class SimulatorView {
         height.setPromptText("5-100");
         TextField width = new TextField();
         width.setPromptText("5-100");
+        dialog.getDialogPane().lookupButton(loginButton).setDisable(true);
 
         gridPane.add(new Label("Zeilen:"), 0, 0);
         gridPane.add(height, 1, 0);
         gridPane.add(new Label("Spalten:"), 2, 0);
         gridPane.add(width, 3, 0);
 
+        height.textProperty().addListener((value, before, after) -> {
+            checkInputOfDialog(loginButton, height, after, width);
+        });
+
+        width.textProperty().addListener((value, before, after) -> {
+            checkInputOfDialog(loginButton, width, after, height);
+        });
+
         dialog.getDialogPane().setContent(gridPane);
 
         dialog.setResultConverter(dialogButton -> {
-            if (dialogButton == loginButtonType) {
-                // Textfeldwerte zum Integer konvertieren
-                int rows = Integer.parseInt(height.getText());
-                int cols = Integer.parseInt(width.getText());
-
-                if (rows >= 5 && rows <= 100 && cols >= 5 && cols <= 100) {
+            if (dialogButton == loginButton) {
+                try {
+                    int rows = Integer.parseInt(height.getText());
+                    int cols = Integer.parseInt(width.getText());
                     roadTraffic.setSize(rows, cols);
-                } else {
+                } catch (Exception exc) {
                     Alert alert = new Alert(Alert.AlertType.ERROR);
-                    alert.setTitle("Alarm");
-                    alert.setHeaderText("Bitte nur Werte zwischen 5-100 eintragen!");
+                    alert.setTitle("Fehler bei der Eingabe");
+                    alert.setHeaderText("Etwas ist schief gelaufen!");
                     alert.showAndWait();
                 }
             }
             return null;
         });
         Optional<Pair<Integer, Integer>> result = dialog.showAndWait();
+    }
+
+    private void checkInputOfDialog(ButtonType loginButton, TextField textField, String after, TextField textField2) {
+        if (!after.isEmpty()) {
+            try {
+                int value = Integer.parseInt(after);
+                int secondValue;
+                if (!textField2.getText().isEmpty()) {
+                    secondValue = Integer.parseInt(textField2.getText());
+                } else {
+                    secondValue = 0;
+                }
+                if (value >= 5 && value <= 100 && secondValue >= 5 && secondValue <= 100) {
+                    dialog.getDialogPane().lookupButton(loginButton).setDisable(false);
+                } else {
+                    dialog.getDialogPane().lookupButton(loginButton).setDisable(true);
+                }
+            } catch (Exception exc) {
+                textField.setText("5");
+                //dialog.getDialogPane().lookupButton(loginButton).setDisable(false);
+            }
+        } else {
+            dialog.getDialogPane().lookupButton(loginButton).setDisable(true);
+        }
     }
 }

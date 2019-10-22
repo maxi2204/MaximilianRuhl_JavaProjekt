@@ -24,7 +24,7 @@ public class Car {
     }
 
     public boolean vornFrei() {
-        return this.roadTraffic.freeInFront();
+        return this.roadTraffic.isFree();
     }
 
     public boolean kofferraumLeer() {

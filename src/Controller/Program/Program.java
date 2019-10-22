@@ -29,6 +29,7 @@ public class Program {
     public void setName(String name) {
         this.name = name;
     }
+
     //Methode returnt den Code aus dem Programm für die Editor Klasse
     public String getCarProgramCode() {
         try {
@@ -65,18 +66,25 @@ public class Program {
             return false;
         }
     }
-    // Falls noch kein Pfad vorhanden ist wird ein neuer erstellt
+    // Von Dibos Source
+
+    /**
+     * Falls noch kein Pfad vorhanden ist wird ein neuer erstellt
+     *
+     * @throws IOException .
+     */
     private void create() throws IOException {
         // Pfad zum Dateiordner
-        Path directoryPath = Paths.get(ProgramController.DIRECTORY);
+        File directoryFile = new File(ProgramController.DIRECTORY);
         Path filePath = Paths.get(ProgramController.DIRECTORY, getFileName());
-        if (Files.notExists(directoryPath)) {
-            Files.createDirectory(directoryPath);
-        } else if (!Files.isDirectory(directoryPath)) {
-            throw new IOException();
-        } else if (!Files.isWritable(directoryPath)) {
-            throw new IOException();
+        if (!directoryFile.exists()) {
+            directoryFile.mkdir();
+        } else if (!directoryFile.isDirectory()) {
+            throw new IOException("Hier fehlt text");
+        } else if (!directoryFile.canWrite()) {
+            throw new IOException("");
         }
+
         if (Files.notExists(filePath)) {
             Files.createFile(filePath);
             String code = this.getPrefix() + ProgramController.PROGRAM_TEMPLATE + this.getPostfix();
@@ -88,6 +96,7 @@ public class Program {
             throw new IOException();
         }
     }
+
     // Wenn noch kein Ordner angelegt wurde, wird ein neuer angelegt
     private boolean checkPath() {
         try {

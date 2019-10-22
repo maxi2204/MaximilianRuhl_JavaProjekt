@@ -18,7 +18,7 @@ import java.util.Optional;
 
 public class ProgramController {
     private static ArrayList<Program> programList = new ArrayList<>();
-    public final static String DIRECTORY = "src/programs";
+    public final static String DIRECTORY = "programs";
     public final static String PROGRAM_TEMPLATE = "void main()  {" + System.lineSeparator() + System.lineSeparator() + "}";
     public final static String DEFAULT_NAME = "DefaultCar";
 

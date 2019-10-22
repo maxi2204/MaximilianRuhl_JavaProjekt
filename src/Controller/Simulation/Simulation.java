@@ -2,24 +2,28 @@ package Controller.Simulation;
 
 import Model.Car;
 import Model.RoadTraffic;
+import javafx.application.Platform;
 
-import java.util.Observable;
-import java.util.Observer;
 
 public class Simulation extends Thread implements Observer {
-    Object syncObject;
     RoadTraffic roadTraffic;
     SimulationManager simulationManager;
     Car car;
     boolean stop;
     boolean pause;
+    private Runnable after;
 
     Simulation(SimulationManager simulationManager, RoadTraffic roadTraffic) {
-        this.syncObject = new Object();
         this.roadTraffic = roadTraffic;
         this.simulationManager = simulationManager;
         this.car = roadTraffic.getCar();
+        System.out.println(car);
+        System.out.println(roadTraffic);
 
+    }
+
+    public void togglePause() {
+        pause = !pause;
     }
 
     @Override
@@ -28,56 +32,65 @@ public class Simulation extends Thread implements Observer {
         try {
             this.car.main();
         } catch (Exception exc) {
-
+// TODO Meldung falls Irgendwas nicht geht
+            exc.printStackTrace();
         } finally {
             this.roadTraffic.deleteObserver(this);
             this.simulationManager.simulationEnded();
+            after.run();
         }
     }
 
     public void startSimulation() {
-
+        this.start();
     }
 
     void breakSimulation() {
 
     }
 
-    void resumeSImulation() {
-        synchronized (this.syncObject) {
-            this.pause = false;
-
-        }
+    void resumeSimulation() {
+        this.pause = false;
+        this.stop = false;
     }
 
-    void stopSimulation() {
-        synchronized (this.syncObject) {
 
-        }
+    public void stopCar() {
+        this.stop = true;
     }
 
-    public void isStopped() {
+    public boolean isStopped() {
+        return this.stop;
 
     }
 
     @Override
-    public void update(Observable o, Object arg) {
+    public void update(Observable o) {
+        if (Platform.isFxApplicationThread()) {
+            return;
+        }
         try {
-            Thread.sleep(SimulationManager.MAXSPEED * 5 - this.simulationManager.getSpeed());
+            Thread.sleep((SimulationManager.MAXSPEED - this.simulationManager.getSpeed()) * 50);
         } catch (InterruptedException exc) {
             this.interrupt();
         }
-        synchronized (this.syncObject) {
-            try {
-                while (this.pause) {
-                    this.syncObject.wait();
+        try {
+            while (this.pause) {
+                Thread.sleep(this.simulationManager.getSpeed());
+                if (this.stop) {
+                    throw new SimulationStoppedException();
                 }
-            } catch (InterruptedException exc) {
-
             }
+        } catch (InterruptedException ignored) {
+
         }
         if (this.stop) {
             throw new SimulationStoppedException();
         }
+    }
+
+    public void startSimulation(Runnable doAfter) {
+        this.after = doAfter;
+        startSimulation();
     }
 }

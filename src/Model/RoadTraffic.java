@@ -1,6 +1,9 @@
 package Model;
 
-import java.util.Observable;
+
+import Controller.Simulation.Observable;
+
+import java.lang.reflect.Method;
 
 public class RoadTraffic extends Observable {
 
@@ -27,17 +30,16 @@ public class RoadTraffic extends Observable {
 
     // Konstruktor
     public RoadTraffic() {
-        car = new Car();
-        car.setRoadTraffic(this);
-        carDirection = START_CAR_DIRECTION;
-        carColumns = 0;
-        carRow = 0;
-        carTires = 0;
-        tiles = new int[startRows][startColumns];
-        createRoadTraffic();
+        this.car = new Car();
+        this.car.setRoadTraffic(this);
+        this.carDirection = START_CAR_DIRECTION;
+        this.carColumns = 0;
+        this.carRow = 0;
+        this.carTires = 0;
+        this.tiles = new int[startRows][startColumns];
+        this.createRoadTraffic();
         this.actualRows = startRows;
         this.actualColumns = startColumns;
-        // Car direkt oben links implementieren
     }
 
     // Start Welt wird erzeugt
@@ -50,18 +52,22 @@ public class RoadTraffic extends Observable {
     }
 
     public void changeCar(Car car) {
+        System.out.println("set" + this);
         car.setRoadTraffic(this);
         this.car = car;
-        this.setChanged();
-        this.notifyObservers();
+
+        for (Method m : car.getClass().getMethods()) {
+            System.out.println(m.getName());
+            //TODO
+        }
+        // Die alte Car-Klasse kann immernoch die Position des Autos im Roadtraffic beeinflussen,
+        // wenn gerade die Main Methode der Klasse läuft. Dies ist nützlich, da so ein Austausch der
+        // Car-Klasse die laufende Simulation nicht beeinflusst
     }
 
     // Wenn an den Koordinaten eine Ampel sich befindet wird true returnt
     public boolean isLightOnPos(int row, int column) {
-        if (tiles[row][column] == LIGHT) {
-            return true;
-        }
-        return false;
+        return tiles[row][column] == LIGHT;
     }
 
     // Car setzen
@@ -101,18 +107,7 @@ public class RoadTraffic extends Observable {
 
     // Car Richtung wird zurück geliefert 0 = Nord, 1 = Ost, 2 = Süd, 3 = West
     public int getCarDirection() {
-        switch (carDirection) {
-            case 0:
-                return 0;
-            case 1:
-                return 1;
-            case 2:
-                return 2;
-            case 3:
-                return 3;
-            default:
-                return 0;
-        }
+        return carDirection;
     }
 
     // Die Car Richtung verschiebt sich so, dass das Car sich nach links dreht
@@ -139,7 +134,7 @@ public class RoadTraffic extends Observable {
     }
 
     // Bei Aufruf der ago() Methode werden die Koordinaten des Autos verschoben, so dass sich das Car vorwärts bewegt
-    // TODO: Hilfsmethode nutzen
+    // TODO: Eventuell ändern
     public void ago() throws LightAtPosException, NotInTrafficException {
         if (carDirection == 0) {
             if (!(inTraffic(((carRow - 1)), carColumns))) {
@@ -149,7 +144,6 @@ public class RoadTraffic extends Observable {
             } else {
                 carRow--;
             }
-
         } else if (carDirection == 1) {
             if (!(inTraffic(carRow, (carColumns + 1)))) {
                 throw new NotInTrafficException();
@@ -216,7 +210,7 @@ public class RoadTraffic extends Observable {
     }
 
     // Methode um zu überprüfen ob vor dem Car keine Ampel ist und der Bereich nicht zu Ende ist
-    public boolean freeInFront() {
+    public boolean isFree() {
         switch (carDirection) {
             case 0:
                 if (!(inTraffic((carRow - 1), carColumns))) {
@@ -271,7 +265,7 @@ public class RoadTraffic extends Observable {
         return false;
     }
 
-    //
+    // Größe des RoadTraffics ändern
     public void setSize(int row, int column) {
         int[][] tmp = new int[row][column];
         for (int i = 0; i < tmp.length && i < tiles.length; i++) {
