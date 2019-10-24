@@ -34,6 +34,7 @@ public class ProgramController {
         programList.remove(program);
         if (programList.isEmpty()) {
             Platform.exit();
+            System.exit(0);
         }
     }
 
@@ -53,7 +54,7 @@ public class ProgramController {
         });
 
         Optional<String> result = dialog.showAndWait();
-        result.ifPresent(name -> SimulatorView.createStage(name));
+        result.ifPresent(str -> SimulatorView.createStage(str));
     }
 
     // Methode stammt von: https://stackoverflow.com/questions/13979172/how-to-check-if-the-class-name-is-valid
@@ -74,17 +75,24 @@ public class ProgramController {
         File file = fileChooser.showOpenDialog(stage);
         if (file != null) {
             if (ProgramController.isOpen(file.getName())) {
-                Alert alert = new Alert(Alert.AlertType.ERROR, "text");
+                Alert alert = new Alert(Alert.AlertType.ERROR, "Datei ist bereits geöffnet");
                 alert.showAndWait();
             }
             else {
                 String name = file.getName();
-                SimulatorView.createStage(name.substring(0, name.length()));
+                int point = (name.indexOf("."));
+                name = name.substring(0,point);
+                SimulatorView.createStage(name);
             }
         }
     }
-    // Methode entatand durch: https://www.geeksforgeeks.org/stream-anymatch-java-examples/
+
     private static boolean isOpen (String str) {
-        return programList.stream().anyMatch(p -> p.getName().equals(str));
+        for (Program p : programList) {
+            if (p.getFileName().equals(str)) {
+                return true;
+            }
+        }
+        return false;
     }
 }

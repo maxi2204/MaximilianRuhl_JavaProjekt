@@ -1,6 +1,11 @@
 package Controller.Program;
 
+import Controller.FileCanNotWriteException;
+import Controller.FileIsNotADirectoryException;
+import Controller.NoWritePermissionInDirectoryException;
+
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -12,12 +17,12 @@ import java.util.List;
 public class Program {
     private String name;
 
-    public Program() throws IOException {
+    public Program() throws IOException, FileIsNotADirectoryException, FileCanNotWriteException, NoWritePermissionInDirectoryException {
         this.name = ProgramController.DEFAULT_NAME;
         create();
     }
 
-    public Program(String name) throws IOException {
+    public Program(String name) throws IOException, FileIsNotADirectoryException, FileCanNotWriteException, NoWritePermissionInDirectoryException {
         this.name = name;
         create();
     }
@@ -34,7 +39,7 @@ public class Program {
     public String getCarProgramCode() {
         try {
             Path file = Paths.get(ProgramController.DIRECTORY, getFileName());
-            StringBuffer text = new StringBuffer();
+            StringBuilder text = new StringBuilder();
             List<String> lines = Files.readAllLines(file, StandardCharsets.UTF_8);
             for (int i = 0; i < lines.size(); i++) {
                 text.append(lines.get(i));
@@ -51,9 +56,9 @@ public class Program {
     }
 
     // Speichert den code aus der Textarea und liefert true wenn es geklappt hat
-    public boolean save(String code) {
+    public void save(String code) {
         if (!checkPath()) {
-            return false;
+            return;
         }
         code = this.getPrefix() + code + this.getPostfix();
         ArrayList<String> lines = new ArrayList<>();
@@ -61,9 +66,7 @@ public class Program {
         try {
             Path path = Paths.get(ProgramController.DIRECTORY, getFileName());
             Files.write(path, lines, StandardCharsets.UTF_8);
-            return true;
         } catch (Exception exc) {
-            return false;
         }
     }
     // Von Dibos Source
@@ -73,27 +76,32 @@ public class Program {
      *
      * @throws IOException .
      */
-    private void create() throws IOException {
+    private void create() throws IOException, FileCanNotWriteException, FileIsNotADirectoryException, NoWritePermissionInDirectoryException {
         // Pfad zum Dateiordner
         File directoryFile = new File(ProgramController.DIRECTORY);
-        Path filePath = Paths.get(ProgramController.DIRECTORY, getFileName());
+        //Path filePath2 = Paths.get(ProgramController.DIRECTORY, getFileName());
+        String filePath = new String(ProgramController.DIRECTORY + getFileName());
+        File file = new File(filePath);
         if (!directoryFile.exists()) {
             directoryFile.mkdir();
         } else if (!directoryFile.isDirectory()) {
-            throw new IOException("Hier fehlt text");
+            throw new FileIsNotADirectoryException();
         } else if (!directoryFile.canWrite()) {
-            throw new IOException("");
+            throw new NoWritePermissionInDirectoryException();
         }
 
-        if (Files.notExists(filePath)) {
-            Files.createFile(filePath);
+        if (!file.exists()) {
+            file.createNewFile();
             String code = this.getPrefix() + ProgramController.PROGRAM_TEMPLATE + this.getPostfix();
             ArrayList<String> lines = new ArrayList<>();
             lines.add(code);
-            Files.write(filePath, lines, StandardCharsets.UTF_8);
+            FileWriter fileWriter = new FileWriter(file);
+            fileWriter.write(lines.toString());
+            fileWriter.close();
+           // Files.write(file.toPath(), lines, StandardCharsets.UTF_8);
         }
-        if (!Files.isWritable(filePath)) {
-            throw new IOException();
+        if (!file.canWrite()) {
+            throw new FileCanNotWriteException();
         }
     }
 

@@ -23,18 +23,13 @@ public class MouseEventHandler implements EventHandler<MouseEvent> {
         if (event.getEventType().equals(MouseEvent.MOUSE_DRAGGED)) {
             mouseDrag(event);
         }
-        // Keine Funktion
-        if (event.getEventType().equals(MouseEvent.MOUSE_RELEASED)) {
-            mouseReleased(event);
-        }
-
     }
 
     private void mouseDrag(MouseEvent event) {
         int newColumn = ((int)event.getX()/34);
         int newRow = ((int)event.getY()/34);
         if (view.getBtnNewCar().isSelected()) {
-            if (!(roadTraffic.isLightOnPos(newRow, newColumn))) {
+            if ((roadTraffic.isInTraffic(newRow, newColumn))) {
                 roadTraffic.setCar(newRow, newColumn);
             }
         }
@@ -60,10 +55,5 @@ public class MouseEventHandler implements EventHandler<MouseEvent> {
         else if (view.getBtnDelete().isSelected()) {
             roadTraffic.clearTile(newRow,newColumn);
         }
-    }
-
-    // Noch nicht implementiert
-    private void mouseReleased(MouseEvent event) {
-
     }
 }

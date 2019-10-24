@@ -13,6 +13,8 @@ import java.net.URL;
 import java.net.URLClassLoader;
 
 public class CompileController {
+    //TODO Wenn Fehler sollen diese im Altert ausgegeben werden
+
     // Compile Methode wird ausgeführt bei jeder neuen Stage
     public static void firstCompile(RoadTraffic roadTraffic, Program program) {
         ByteArrayOutputStream stream = new ByteArrayOutputStream();
@@ -27,7 +29,6 @@ public class CompileController {
     // Compile Methode für jeden weiteren Compile Vorgang beim manuellen betätigen des Buttons
     public static void compileReload(RoadTraffic roadTraffic, Program program, String code) {
         program.save(code);
-        System.out.println(roadTraffic);
         ByteArrayOutputStream stream = new ByteArrayOutputStream();
         int i = ToolProvider.getSystemJavaCompiler().run(null, null, stream, program.getFullFileName());
         if (i != 0) {
@@ -43,7 +44,7 @@ public class CompileController {
     }
     // Eine .class Datei wird ausgelesen, ein neues car Objekt erzeugt, sowie dieses objekt in den roadTraffic zu initieren
 
-    public static void loadCompiled(RoadTraffic roadTraffic, Program program) {
+    private static void loadCompiled(RoadTraffic roadTraffic, Program program) {
         // Classloader wird erzeugt, lädt die Klasse die zuvor erzeugt wurde,
         Car car = new Car();
         try {

@@ -1,5 +1,6 @@
 package View;
 
+import Controller.CarContextMenuEventHandler;
 import Controller.MouseEventHandler;
 import Controller.Simulation.Observable;
 import Controller.Simulation.Observer;
@@ -7,12 +8,11 @@ import Model.RoadTraffic;
 import javafx.application.Platform;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
-import javafx.scene.control.*;
 import javafx.scene.image.Image;
+import javafx.scene.input.ContextMenuEvent;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.Region;
 import javafx.scene.paint.Color;
-import javafx.util.Pair;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -39,8 +39,9 @@ public class RoadTrafficPanel extends Region implements Observer {
         this.loadImages();
         this.init();
         MouseEventHandler mouseEventHandler = new MouseEventHandler(view, roadTraffic);
-
+        CarContextMenuEventHandler carContextMenuEventHandler = new CarContextMenuEventHandler(roadTraffic, this);
         canvas.addEventHandler(MouseEvent.ANY, mouseEventHandler);
+        canvas.addEventHandler(ContextMenuEvent.ANY, carContextMenuEventHandler);
     }
 
     // Returnt die Spielfeldbreite
@@ -140,7 +141,7 @@ public class RoadTrafficPanel extends Region implements Observer {
                     gc.strokeText(String.valueOf(roadTraffic.getTiresAtPos(z, s)), 2 + (s * 34) + 24, 2 + (z * 34) + 30);
                     }
                     else {
-                        gc.strokeText(String.valueOf(roadTraffic.getTiresAtPos(z, s)), 2 + (s * 32) + 24, 2 + (z * 34) + 30); }
+                        gc.strokeText(String.valueOf(roadTraffic.getTiresAtPos(z, s)), 2 + (s * 34) + 19, 2 + (z * 34) + 30); }
                     }
                 }
             }

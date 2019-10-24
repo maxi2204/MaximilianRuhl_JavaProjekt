@@ -39,12 +39,17 @@ public class SimulationManager extends Observable {
 
     }
 
-    public void toggle() {
-       simulation.togglePause();
+    public void toggle(Runnable doAfter) {
+        if (this.status == SimulationState.RUNNING) {
+            this.status = SimulationState.PAUSED;
+        } else {
+            this.status = SimulationState.RUNNING;
+        }
+        simulation.togglePause(doAfter);
     }
 
-    public void stop() {
-        simulation.stopCar();
+    public void stop(Runnable doAfter) {
+        simulation.stopCar(doAfter);
     }
 
     public void simulationEnded() {
@@ -53,9 +58,14 @@ public class SimulationManager extends Observable {
     }
 
     public void start(Runnable doAfter) {
-        simulation = new Simulation(this, roadTraffic);
-        this.status = SimulationState.RUNNING;
-        this.simulation.startSimulation(doAfter);
+        if (this.status == SimulationState.PAUSED) {
+            this.status = SimulationState.RUNNING;
+            simulation.resumeSimulation();
+        } else {
+            simulation = new Simulation(this, roadTraffic);
+            this.status = SimulationState.RUNNING;
+            this.simulation.startSimulation(doAfter);
+        }
     }
 }
 

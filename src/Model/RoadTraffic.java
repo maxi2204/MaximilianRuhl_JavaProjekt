@@ -52,14 +52,8 @@ public class RoadTraffic extends Observable {
     }
 
     public void changeCar(Car car) {
-        System.out.println("set" + this);
         car.setRoadTraffic(this);
         this.car = car;
-
-        for (Method m : car.getClass().getMethods()) {
-            System.out.println(m.getName());
-            //TODO
-        }
         // Die alte Car-Klasse kann immernoch die Position des Autos im Roadtraffic beeinflussen,
         // wenn gerade die Main Methode der Klasse läuft. Dies ist nützlich, da so ein Austausch der
         // Car-Klasse die laufende Simulation nicht beeinflusst
@@ -126,18 +120,17 @@ public class RoadTraffic extends Observable {
     }
 
     // Hilfsmethode um zu überprüfen ob die Koordinaten sich noch im Bereich befinden
-    private boolean inTraffic(int row, int column) {
-        if (row < 0 || row > actualRows || column < 0 || column > actualColumns) {
+    public boolean isInTraffic(int row, int column) {
+        if (row < 0 || row >= actualRows || column < 0 || column >= actualColumns) {
             return false;
         }
         return true;
     }
 
     // Bei Aufruf der ago() Methode werden die Koordinaten des Autos verschoben, so dass sich das Car vorwärts bewegt
-    // TODO: Eventuell ändern
     public void ago() throws LightAtPosException, NotInTrafficException {
         if (carDirection == 0) {
-            if (!(inTraffic(((carRow - 1)), carColumns))) {
+            if (!(isInTraffic(((carRow - 1)), carColumns))) {
                 throw new NotInTrafficException();
             } else if (isLightOnPos(((carRow - 1)), carColumns)) {
                 throw new LightAtPosException();
@@ -145,7 +138,7 @@ public class RoadTraffic extends Observable {
                 carRow--;
             }
         } else if (carDirection == 1) {
-            if (!(inTraffic(carRow, (carColumns + 1)))) {
+            if (!(isInTraffic(carRow, (carColumns + 1)))) {
                 throw new NotInTrafficException();
             } else if (isLightOnPos(carRow, (carColumns + 1))) {
                 throw new LightAtPosException();
@@ -153,7 +146,7 @@ public class RoadTraffic extends Observable {
                 carColumns++;
             }
         } else if (carDirection == 2) {
-            if (!(inTraffic((carRow + 1), carColumns))) {
+            if (!(isInTraffic((carRow + 1), carColumns))) {
                 throw new NotInTrafficException();
             } else if (isLightOnPos((carRow + 1), carColumns)) {
                 throw new LightAtPosException();
@@ -161,7 +154,7 @@ public class RoadTraffic extends Observable {
                 carRow++;
             }
         } else if (carDirection == 3) {
-            if (!(inTraffic(carRow, (carColumns - 1)))) {
+            if (!(isInTraffic(carRow, (carColumns - 1)))) {
                 throw new NotInTrafficException();
             } else if (isLightOnPos(carRow, (carColumns - 1))) {
                 throw new LightAtPosException();
@@ -175,10 +168,7 @@ public class RoadTraffic extends Observable {
 
     // hilfsmethode um fetzustellen ob sich Reifen an bestimmten Koordinaten befinden
     private boolean tiresAtPos(int row, int column) {
-        if (tiles[row][column] > 0) {
-            return true;
-        }
-        return false;
+        return tiles[row][column] > 0;
     }
 
     // Methode um Reifen aufzusammeln und in den Kofferraum des Autos abzulegen
@@ -193,10 +183,7 @@ public class RoadTraffic extends Observable {
 
     // Hilfsmethode um festzustellen ob sich Reifen im Kofferaum befinden
     private boolean tiresInTrunk() {
-        if (carTires > 0) {
-            return true;
-        }
-        return false;
+        return carTires > 0;
     }
 
     // Methode um Reifen aus dem Kofferraum abzulegen
@@ -210,10 +197,10 @@ public class RoadTraffic extends Observable {
     }
 
     // Methode um zu überprüfen ob vor dem Car keine Ampel ist und der Bereich nicht zu Ende ist
-    public boolean isFree() {
+    boolean isFree() {
         switch (carDirection) {
             case 0:
-                if (!(inTraffic((carRow - 1), carColumns))) {
+                if (!(isInTraffic((carRow - 1), carColumns))) {
                     return false;
                 } else if (isLightOnPos((carRow - 1), carColumns)) {
                     return false;
@@ -221,7 +208,7 @@ public class RoadTraffic extends Observable {
                     return true;
                 }
             case 1:
-                if (!(inTraffic(carRow, (carColumns + 1)))) {
+                if (!(isInTraffic(carRow, (carColumns + 1)))) {
                     return false;
                 } else if (isLightOnPos(carRow, (carColumns + 1))) {
                     return false;
@@ -229,7 +216,7 @@ public class RoadTraffic extends Observable {
                     return true;
                 }
             case 2:
-                if (!(inTraffic((carRow + 1), carColumns))) {
+                if (!(isInTraffic((carRow + 1), carColumns))) {
                     return false;
                 } else if (isLightOnPos((carRow + 1), carColumns)) {
                     return false;
@@ -237,7 +224,7 @@ public class RoadTraffic extends Observable {
                     return true;
                 }
             case 3:
-                if (!(inTraffic(carRow, (carColumns - 1)))) {
+                if (!(isInTraffic(carRow, (carColumns - 1)))) {
                     return false;
                 } else if (isLightOnPos(carRow, (carColumns - 1))) {
                     return false;
@@ -251,18 +238,12 @@ public class RoadTraffic extends Observable {
 
     // Hilfsmethode für das Car
     boolean trunkEmpty() {
-        if (tiresInTrunk() == true) {
-            return true;
-        }
-        return false;
+        return tiresInTrunk();
     }
 
     // Hilfsmethode für das Car
     boolean tiresAtCarPos() {
-        if (tiresAtPos(carRow, carColumns)) {
-            return true;
-        }
-        return false;
+        return tiresAtPos(carRow, carColumns);
     }
 
     // Größe des RoadTraffics ändern

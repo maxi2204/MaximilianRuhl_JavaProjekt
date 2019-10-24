@@ -1,5 +1,8 @@
 package View;
 
+import Controller.FileCanNotWriteException;
+import Controller.FileIsNotADirectoryException;
+import Controller.NoWritePermissionInDirectoryException;
 import Controller.PlacingState;
 import Controller.Program.CompileController;
 import Controller.Program.Program;
@@ -18,9 +21,12 @@ import javafx.scene.input.KeyCombination;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.GridPane;
 import javafx.scene.media.AudioClip;
+import javafx.scene.media.Media;
+import javafx.scene.media.MediaPlayer;
 import javafx.stage.Stage;
 import javafx.util.Pair;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.util.Optional;
@@ -80,9 +86,9 @@ public class SimulatorView {
     private ToggleButton btnStop;
 
     private Dialog<Pair<Integer, Integer>> dialog;
-//TODO datei irgendwo anders hin machen
-    final URL resource = getClass().getResource("death.wav");
-    final AudioClip clip = new AudioClip(resource.toString());
+    String file = "death.wav";
+    final Media Medium = new Media(new File(file).toURI().toString());
+    MediaPlayer mediaPlayer;
 
     public SimulatorView(RoadTraffic roadTraffic, Stage stage, Program program, SimulationManager simulationManager) {
         this.roadTraffic = roadTraffic;
@@ -211,16 +217,19 @@ public class SimulatorView {
         startItem.setOnAction(event -> {
             int status = simulationManager.getStatus();
             if (status == SimulationState.RUNNING) {
-                simulationManager.toggle();
+                simulationManager.toggle(() ->
+                        btnPlay.setDisable(false));
             } else {
-                simulationManager.start();
+                simulationManager.start(() ->
+                        btnPlay.setDisable(true));
             }
         });
         breakItem = new MenuItem("_Pause");
         Image imgBreak = new Image(getClass().getResource("Resources/Pause16.gif").toString());
         breakItem.setGraphic(new ImageView(imgBreak));
         breakItem.setOnAction(event -> {
-            simulationManager.toggle();
+            simulationManager.toggle(() ->
+                    btnPlay.setDisable(true));
         });
         freezeItem = new MenuItem("_Stopp");
         freezeItem.setAccelerator(KeyCombination.keyCombination("SHORTCUT+F12"));
@@ -306,7 +315,7 @@ public class SimulatorView {
         btnTiresInsideCar.setOnAction(event -> {
             Alert info = new Alert(Alert.AlertType.INFORMATION);
             info.setHeaderText("Anzahl der Reifen im Auto:");
-            info.setContentText(""+roadTraffic.getCarTires());
+            info.setContentText("" + roadTraffic.getCarTires());
             info.showAndWait();
         });
         btnTiresInsideCar.setToggleGroup(toggleGroup);
@@ -324,9 +333,10 @@ public class SimulatorView {
         btnCarAgo.setTooltip(new Tooltip("Car vorwärts bewegen"));
         btnCarAgo.setOnAction(event -> {
             try {
-            roadTraffic.ago(); }
-            catch (Exception e) {
-                clip.play(1);
+                roadTraffic.ago();
+            } catch (Exception e) {
+                loadMusic(mediaPlayer);
+                mediaPlayer.play();
             }
         });
         btnCarAgo.setToggleGroup(toggleGroup);
@@ -351,12 +361,13 @@ public class SimulatorView {
         btnPlay.setTooltip(new Tooltip("Starten"));
         btnPlay.setOnAction(event -> {
             btnPlay.setDisable(true);
-            int status = simulationManager.getStatus();
-            if (status == SimulationState.RUNNING) {
-                simulationManager.toggle();
-            } else {
-                simulationManager.start(()-> btnPlay.setDisable(false));
-            }
+            btnBreak.setDisable(false);
+            btnStop.setDisable(false);
+            simulationManager.start(() -> {
+                btnPlay.setDisable(false);
+                btnStop.setDisable(true);
+                btnBreak.setDisable(true);
+            });
         });
         btnPlay.setToggleGroup(toggleGroup);
 
@@ -364,9 +375,14 @@ public class SimulatorView {
         Image imgBreak = new Image(getClass().getResource("Resources/Pause24.png").toString());
         btnBreak.setGraphic(new ImageView(imgBreak));
         btnBreak.setTooltip(new Tooltip("Pause"));
+        btnBreak.setDisable(true);
         btnBreak.setOnAction(event -> {
-            btnPlay.setDisable(true);
-            simulationManager.toggle();
+            btnPlay.setDisable(false);
+            btnStop.setDisable(false);
+            btnBreak.setDisable(true);
+            simulationManager.toggle(() -> {
+                btnPlay.setDisable(true);
+            });
         });
         btnBreak.setToggleGroup(toggleGroup);
 
@@ -374,9 +390,13 @@ public class SimulatorView {
         Image imgStop = new Image(getClass().getResource("Resources/Stop24.png").toString());
         btnStop.setGraphic(new ImageView(imgStop));
         btnStop.setTooltip(new Tooltip("Stopp"));
+        btnStop.setDisable(true);
         btnStop.setToggleGroup(toggleGroup);
         btnStop.setOnAction(e -> {
-            simulationManager.stop();
+            btnBreak.setDisable(true);
+            simulationManager.stop(()->btnPlay.setDisable(false));
+            btnStop.setDisable(true);
+
         });
 
         Slider slider = createSlider();
@@ -391,7 +411,7 @@ public class SimulatorView {
 
     // Diese Methode entstand durch Hilfe von https://stackoverflow.com/questions/30687994/how-to-center-the-content-of-a-javafx-8-scrollpane
     // Diese Methode zentriert das Canvas
-    public void center(Bounds viewPortBounds, Canvas canvas) {
+    void center(Bounds viewPortBounds, Canvas canvas) {
         double width = viewPortBounds.getWidth();
         double height = viewPortBounds.getHeight();
 
@@ -407,6 +427,10 @@ public class SimulatorView {
         }
     }
 
+    private void loadMusic(MediaPlayer mediaPlayer) {
+        this.mediaPlayer = new MediaPlayer(Medium);
+    }
+
     public static void createStage(String str) {
         RoadTraffic roadTraffic = new RoadTraffic();
         Stage stage = new Stage();
@@ -419,6 +443,8 @@ public class SimulatorView {
             stage.show();
         } catch (IOException exc) {
             System.out.println("Fehler beim erstellen der Stage");
+        } catch (FileCanNotWriteException | NoWritePermissionInDirectoryException | FileIsNotADirectoryException e) {
+            e.printStackTrace();
         }
     }
 

@@ -1,28 +1,31 @@
 package Controller.Simulation;
 
 import Model.Car;
+import Model.NotInTrafficException;
 import Model.RoadTraffic;
 import javafx.application.Platform;
 
 
 public class Simulation extends Thread implements Observer {
-    RoadTraffic roadTraffic;
-    SimulationManager simulationManager;
-    Car car;
-    boolean stop;
-    boolean pause;
+    private RoadTraffic roadTraffic;
+    private SimulationManager simulationManager;
+    private Car car;
+    private volatile boolean stop;
+    private volatile boolean pause;
     private Runnable after;
 
     Simulation(SimulationManager simulationManager, RoadTraffic roadTraffic) {
         this.roadTraffic = roadTraffic;
         this.simulationManager = simulationManager;
         this.car = roadTraffic.getCar();
-        System.out.println(car);
-        System.out.println(roadTraffic);
-
     }
 
-    public void togglePause() {
+    synchronized void togglePause(Runnable doAfter) {
+        this.after = doAfter;
+        this.togglePause();
+    }
+
+    private synchronized void togglePause() {
         pause = !pause;
     }
 
@@ -32,7 +35,6 @@ public class Simulation extends Thread implements Observer {
         try {
             this.car.main();
         } catch (Exception exc) {
-// TODO Meldung falls Irgendwas nicht geht
             exc.printStackTrace();
         } finally {
             this.roadTraffic.deleteObserver(this);
@@ -41,12 +43,10 @@ public class Simulation extends Thread implements Observer {
         }
     }
 
-    public void startSimulation() {
+    void startSimulation() {
+        this.pause = false;
+        this.stop = false;
         this.start();
-    }
-
-    void breakSimulation() {
-
     }
 
     void resumeSimulation() {
@@ -55,8 +55,10 @@ public class Simulation extends Thread implements Observer {
     }
 
 
-    public void stopCar() {
+    void stopCar(Runnable doAfter) {
+        this.after = doAfter;
         this.stop = true;
+        this.pause = false;
     }
 
     public boolean isStopped() {
@@ -78,14 +80,14 @@ public class Simulation extends Thread implements Observer {
             while (this.pause) {
                 Thread.sleep(this.simulationManager.getSpeed());
                 if (this.stop) {
-                    throw new SimulationStoppedException();
+                    throw new ThreadDeath();
                 }
             }
         } catch (InterruptedException ignored) {
 
         }
         if (this.stop) {
-            throw new SimulationStoppedException();
+            throw new ThreadDeath();
         }
     }
 
